@@ -11,9 +11,34 @@ import json, re, subprocess, sys, os
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "node-reject-mirror.list")
+EXEMPT_FILE = os.path.join(ROOT, "mirror-exempt.list")
 RED = re.compile(r"microsoft|msft|xboxlive|officewebapps|stripe", re.I)
 DROP = {"com", "net", "org", "info", "biz"}
 SSH = os.environ.get("NODE_SSH", "")  # ssh alias for the node (set NODE_SSH; never hard-coded)
+
+
+def load_exempt():
+    """mirror-exempt.list -> (exact_set, suffix_tuple). Missing file = no exemptions."""
+    exact, suffix = set(), []
+    if not os.path.exists(EXEMPT_FILE):
+        return exact, tuple()
+    for line in open(EXEMPT_FILE, encoding="utf-8"):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        kind, _, val = line.partition(",")
+        kind, val = kind.strip().upper(), val.strip().lower().rstrip(".")
+        if not val:
+            continue
+        if kind == "DOMAIN":
+            exact.add(val)
+        elif kind == "DOMAIN-SUFFIX":
+            suffix += [val]
+    return exact, tuple(suffix)
+
+
+def is_exempt(x, exact, suffix):
+    return x in exact or any(x == s or x.endswith("." + s) for s in suffix)
 
 
 def main():
@@ -36,7 +61,8 @@ def main():
          "sing-box rule-set decompile /etc/sing-box/geosite-cn.srs >/dev/null 2>&1; cat /etc/sing-box/geosite-cn.json"],
         capture_output=True, text=True, check=True).stdout
     g = json.loads(raw)
-    dom, suf, red, reg = set(), set(), 0, 0
+    exact, suffix = load_exempt()
+    dom, suf, red, reg, exempt = set(), set(), 0, 0, 0
     for r in g.get("rules", []):
         for key, vals in r.items():
             if not isinstance(vals, list):
@@ -49,6 +75,9 @@ def main():
                 if x in DROP or RED.search(x):
                     red += 1
                     continue
+                if is_exempt(x, exact, suffix):
+                    exempt += 1
+                    continue
                 if key == "domain":
                     dom.add(x)
                 elif key == "domain_suffix":
@@ -58,7 +87,7 @@ def main():
     lines = [f"DOMAIN-SUFFIX,{x}" for x in sorted(suf)] + [f"DOMAIN,{x}" for x in sorted(dom - suf)]
     with open(OUT, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"wrote {len(lines)} lines -> {OUT} (excluded red-line {red}, skipped regex {reg})")
+    print(f"wrote {len(lines)} lines -> {OUT} (excluded red-line {red}, mirror-exempt {exempt}, skipped regex {reg})")
     if "--push" in sys.argv:
         subprocess.run(["git", "-C", ROOT, "add", os.path.basename(OUT)], check=True)
         subprocess.run(["git", "-C", ROOT, "-c", "user.email=prur@users.noreply.github.com",

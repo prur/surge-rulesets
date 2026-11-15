@@ -1,0 +1,18 @@
+# mirror-exempt.list — 永不写入 node-reject-mirror.list 的域
+#
+# 背景：node-reject-mirror.list 是"节点会 reject 的 CN 域 → 客户端改判 DIRECT"的镜像。
+# 但有一部分域虽然出现在节点 geosite-cn 里，客户端**必须**交给自己的策略组（Google 组/代理）：
+# 它们是 Google 网页应用的功能性 bootstrap 资源，走直连会落到国内单点 CDN 边缘，
+# 抖动/失败直接让整个应用报错（实测 www.gstatic.com 突发 15 次有 4 次失败、p50 3.0s）。
+#
+# 配套：这些域在节点侧已由 node-exempt.json 放行（不再 reject），所以从镜像剔除是安全的。
+# 顺序要求：先 apply-node-exempt.py --apply 铺开节点放行，再 gen-mirror.py --push 收紧镜像；
+#          反过来（镜像先收紧）会让还没放行的节点在过渡期 reject 这些域。
+#
+# 格式：与 Surge 规则同形，DOMAIN 精确匹配 / DOMAIN-SUFFIX 后缀匹配；# 注释与空行忽略。
+
+# --- Google 网页应用静态 CDN（Console / Pay / Accounts / 各类 Google 前端主 JS+CSS）---
+DOMAIN-SUFFIX,gstatic.com
+
+# --- Google 公共 API（含被广告表 REJECT 的 safebrowsing、Chrome 组件服务等）---
+DOMAIN-SUFFIX,googleapis.com

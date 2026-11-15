@@ -8661,7 +8661,6 @@ DOMAIN,cds.apple.com.akadns.net
 DOMAIN,cdsassets.apple.com
 DOMAIN,certs-lb.apple.com.akadns.net
 DOMAIN,certs.apple.com
-DOMAIN,checkin.gstatic.com
 DOMAIN,cl1-cdn.origin-apple.com.akadns.net
 DOMAIN,cl1.apple.com
 DOMAIN,cl2-cdn.origin-apple.com.akadns.net
@@ -8681,7 +8680,6 @@ DOMAIN,clickserver.googleads.com
 DOMAIN,client-api.itunes.apple.com
 DOMAIN,clientflow.apple.com
 DOMAIN,clientflow.apple.com.akadns.net
-DOMAIN,clientservices.googleapis.com
 DOMAIN,cma.itunes.apple.com
 DOMAIN,cn-smp-paymentservices.apple.com
 DOMAIN,cn.alibabacloud.com
@@ -8691,15 +8689,12 @@ DOMAIN,cn.windowssearch.com
 DOMAIN,communities.apple.com
 DOMAIN,configuration.apple.com
 DOMAIN,configuration.apple.com.akadns.net
-DOMAIN,connectivitycheck.gstatic.com
-DOMAIN,crashlyticsreports-pa.googleapis.com
 DOMAIN,crl-lb.apple.com.akadns.net
 DOMAIN,crl.apple.com
 DOMAIN,crl.globalsign.net
 DOMAIN,crl.kaspersky.com
 DOMAIN,crl.pki.goog
 DOMAIN,crls.pki.goog
-DOMAIN,csi.gstatic.com
 DOMAIN,cstat.apple.com
 DOMAIN,cstat.cdn-apple.com
 DOMAIN,ctdsb.clouddiffuse.xyz
@@ -8755,14 +8750,7 @@ DOMAIN,experiments.apple.com
 DOMAIN,f.c2r.ts.cdn.office.net
 DOMAIN,fides-pol.apple.com
 DOMAIN,firebase-settings.crashlytics.com
-DOMAIN,fontfiles.googleapis.com
-DOMAIN,fonts.googleapis.com
-DOMAIN,fonts.gstatic.com
 DOMAIN,fpinit.itunes.apple.com
-DOMAIN,g0.gstatic.com
-DOMAIN,g1.gstatic.com
-DOMAIN,g2.gstatic.com
-DOMAIN,g3.gstatic.com
 DOMAIN,gog.qtlglb.com
 DOMAIN,gonglchuangl.net
 DOMAIN,gongyichuangyi.net
@@ -8820,7 +8808,6 @@ DOMAIN,id6.me
 DOMAIN,images-cn-8.ssl-images-amazon.com
 DOMAIN,images-cn.ssl-images-amazon.com
 DOMAIN,images.apple.com.edgekey.net.globalredir.akadns.net
-DOMAIN,imasdk.googleapis.com
 DOMAIN,inappcheck-cn.itunes-apple.com.akadns.net
 DOMAIN,inappcheck-lb.itunes-apple.com.akadns.net
 DOMAIN,inappcheck.itunes.apple.com
@@ -8964,7 +8951,6 @@ DOMAIN,pancake.apple.com
 DOMAIN,pba0.apple.com
 DOMAIN,pd-nk.itunes.apple.com
 DOMAIN,pd.itunes.apple.com
-DOMAIN,performanceparameters.googleapis.com
 DOMAIN,pki-goog.l.google.com
 DOMAIN,play-edge.itunes.apple.com
 DOMAIN,play.itunes.apple.com
@@ -9024,7 +9010,6 @@ DOMAIN,s3.mzstatic.com
 DOMAIN,s4.mzstatic.com
 DOMAIN,s5.mzstatic.com
 DOMAIN,safebrowsing-cache.google.com
-DOMAIN,safebrowsing.googleapis.com
 DOMAIN,se-edge.itunes.apple.com
 DOMAIN,se2.itunes.apple.com
 DOMAIN,search.itunes.apple.com
@@ -9042,7 +9027,6 @@ DOMAIN,sp.itunes.apple.com
 DOMAIN,speedysub.music.apple.com
 DOMAIN,ss.bjmu.edu.cn
 DOMAIN,ssl-google-analytics.l.google.com
-DOMAIN,ssl.gstatic.com
 DOMAIN,st-bak.viv.wanwang.space
 DOMAIN,staging-controlbe.floonet.goog
 DOMAIN,staging-databe.floonet.goog
@@ -9074,7 +9058,6 @@ DOMAIN,swscan-cdn.apple.com.akadns.net
 DOMAIN,swscan.apple.com
 DOMAIN,sylvan.apple.com
 DOMAIN,sync.itunes.apple.com
-DOMAIN,tac.googleapis.com
 DOMAIN,tf-feedback.itunes.apple.com
 DOMAIN,time.amazonaws.cn
 DOMAIN,time.izatcloud.net
@@ -9087,7 +9070,6 @@ DOMAIN,trts.baishancdnx.cn
 DOMAIN,ubisoftconnect.eo-edgefunctions7.com
 DOMAIN,universal-activity-service.itunes.apple.com
 DOMAIN,update.crashlytics.com
-DOMAIN,update.googleapis.com
 DOMAIN,updates-http.cdn-apple.com
 DOMAIN,updates-http.cdn-apple.com.akadns.net
 DOMAIN,updates.cdn-apple.com
@@ -9095,7 +9077,6 @@ DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn
 DOMAIN,upp.itunes.apple.com
 DOMAIN,valid.apple.com
 DOMAIN,valid.origin-apple.com.akadns.net
-DOMAIN,wear.googleapis.com
 DOMAIN,weather-data.apple.com
 DOMAIN,weather-data.apple.com.akadns.net
 DOMAIN,weather-map.apple.com
@@ -9108,7 +9089,6 @@ DOMAIN,www.apple.com
 DOMAIN,www.apple.com.edgekey.net.globalredir.akadns.net
 DOMAIN,www.destinationurl.com
 DOMAIN,www.entrust.cn
-DOMAIN,www.gstatic.com
 DOMAIN,www.pxcc.com
 DOMAIN,www.recaptcha-cn.net
 DOMAIN,www.recaptcha.net
