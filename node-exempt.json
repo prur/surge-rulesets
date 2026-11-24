@@ -1,16 +1,17 @@
 {
   "_comment": [
     "node-exempt.json — 在节点 sing-box route 里、geosite-cn reject 之前放行的规则体。",
-    "场景：客户端（Surge）把 Google 前端资源送到节点走代理，但节点 geosite-cn 里有这些域，",
-    "照名单 reject 时客户端表现为 SSL_ERROR_SYSCALL / 秒断（实测 www.gstatic.com 15/15 失败）。",
-    "为什么用后缀而不是精确域：客户端对 gstatic/googleapis 是全族走代理（Google 组），",
-    "任何被 geosite-cn 收录的子域都可能被送到节点，逐条精确匹配必然漏。",
-    "由 apply-node-exempt.py 幂等写入：已存在但内容不同 -> 原位规范化，不会叠加第二条。"
+    "场景：客户端（Surge）把 Google 前端资源 / 软件下载送到节点走代理，但节点 geosite-cn 里有这些域，",
+    "照名单 reject 时客户端表现为 SSL_ERROR_SYSCALL / 秒断（实测 www.gstatic.com 15/15 失败、dl.google.com 秒断）。",
+    "为什么用 domain_suffix：客户端对 gstatic/googleapis 全族及 dl.google.com 走代理（Google 组），",
+    "sing-box 单条规则内不同匹配键是 AND 关系，统一放 domain_suffix 即可同时精确匹配 dl.google.com 且不破坏 OR 语义。",
+    "由 apply-node-exempt.py 幂等写入：已存在但内容不同 -> 原位规范化，不会叠加第二条；含 socks-in 的节点自动限定非 socks-in 入站以保持 post-resolve SSRF 防护。"
   ],
   "rule": {
     "domain_suffix": [
       "gstatic.com",
-      "googleapis.com"
+      "googleapis.com",
+      "dl.google.com"
     ],
     "action": "route",
     "outbound": "direct"

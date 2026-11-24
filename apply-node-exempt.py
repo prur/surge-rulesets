@@ -29,7 +29,18 @@ EXEMPT = os.path.join(ROOT, "node-exempt.json")
 CONFIG = "/etc/sing-box/config.json"
 
 # 会用到 geosite-cn reject 的代理出口机队（ssh alias）
-DEFAULT_HOSTS = ["dmit-annual", "bandwagon", "rfc-jp", "po0-hk", "bero-kvm18257", "greencloud-sg"]
+DEFAULT_HOSTS = [
+    "dmit-annual",
+    "bandwagon",
+    "rfc-jp",
+    "po0-hk",
+    "bero-kvm18257",
+    "greencloud-sg",
+    "gcp-us-node",
+    "gcp-tw-node",
+    "gcp-sg-node",
+    "gcp-jp-node",
+]
 
 REMOTE = r'''
 import json, shutil, sys, time
@@ -42,6 +53,14 @@ except FileNotFoundError:
 rules = c.get("route", {}).get("rules", [])
 geosite_idx = next((i for i, r in enumerate(rules) if r.get("rule_set") == "geosite-cn"), None)
 
+# 含 socks-in (如 sub2api 内部入站) 的节点：仅对常规代理入站放行，防止 socks-in 绕过 post-resolve SSRF 防护
+inbound_tags = [ib.get("tag") for ib in c.get("inbounds", []) if ib.get("tag")]
+effective = dict(canonical)
+if "socks-in" in inbound_tags:
+    proxy_inbounds = [t for t in inbound_tags if t != "socks-in"]
+    if proxy_inbounds:
+        effective["inbound"] = proxy_inbounds
+
 def is_marker(r):
     vals = list(r.get("domain", [])) + list(r.get("domain_suffix", []))
     return r.get("outbound") == "direct" and any(v == "gstatic.com" or v.endswith(".gstatic.com") for v in vals)
@@ -53,7 +72,9 @@ if mode == "verify":
         print("NO_GEOSITE"); sys.exit(0)
     if idx is None:
         print("ABSENT"); sys.exit(0)
-    print("PRESENT_OK" if idx < geosite_idx else "PRESENT_WRONG_POSITION"); sys.exit(0)
+    if idx >= geosite_idx:
+        print("PRESENT_WRONG_POSITION"); sys.exit(0)
+    print("PRESENT_OK" if rules[idx] == effective else "PRESENT_DRIFT"); sys.exit(0)
 
 if geosite_idx is None:
     print("NO_GEOSITE"); sys.exit(1)
@@ -66,23 +87,23 @@ if mode == "rollback":
     json.dump(c, open(cfg, "w"), indent=2, ensure_ascii=False)
     print("ROLLED_BACK_AT", idx); sys.exit(0)
 
-if idx is not None and idx < geosite_idx and rules[idx] == canonical:
+if idx is not None and idx < geosite_idx and rules[idx] == effective:
     print("ALREADY"); sys.exit(0)
 
 shutil.copy2(cfg, cfg + ".bak-%d" % int(time.time()))
 if idx is None:
-    rules.insert(geosite_idx, canonical); print("INSERTED_AT", geosite_idx)
+    rules.insert(geosite_idx, effective); print("INSERTED_AT", geosite_idx)
 else:
     rules.pop(idx)
     # 重新定位 geosite-cn（删除后下标可能变化）
     geosite_idx = next(i for i, r in enumerate(rules) if r.get("rule_set") == "geosite-cn")
-    rules.insert(geosite_idx, canonical); print("NORMALIZED_AT", geosite_idx)
+    rules.insert(geosite_idx, effective); print("NORMALIZED_AT", geosite_idx)
 json.dump(c, open(cfg, "w"), indent=2, ensure_ascii=False)
 '''
 
 
 def sh(host, cmd, timeout=150):
-    return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", host, cmd],
+    return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=30", host, cmd],
                           capture_output=True, text=True, timeout=timeout)
 
 
@@ -102,6 +123,7 @@ def main():
     rule_json = json.dumps(canonical, separators=(",", ":"), sort_keys=True)
     tmp = "/tmp/.node_exempt.py"
     b64 = base64.b64encode(REMOTE.encode()).decode()
+    sudo_prefix = 'SUDO=$([ "$(id -u)" -eq 0 ] && echo "" || echo "sudo -n");'
     rc = 0
     for host in hosts:
         try:
@@ -110,15 +132,16 @@ def main():
                 print(f"{host:16s} SSH_FAIL {up.stderr.strip()[:60]}")
                 rc = 1
                 continue
-            out = sh(host, f"python3 {tmp} {mode} {CONFIG} '{rule_json}'").stdout.strip()
+            run = sh(host, f"{sudo_prefix} $SUDO python3 {tmp} {mode} {CONFIG} '{rule_json}'; rc=$?; rm -f {tmp}; exit $rc")
+            out = run.stdout.strip()
             state = out.splitlines()[-1] if out else "NO_OUTPUT"
             if mode != "verify" and state.split()[0] in ("INSERTED_AT", "NORMALIZED_AT", "ROLLED_BACK_AT"):
-                chk = sh(host, f"sing-box check -c {CONFIG} && echo CHECK_OK")
+                chk = sh(host, f"{sudo_prefix} $SUDO sing-box check -c {CONFIG} && echo CHECK_OK")
                 if "CHECK_OK" not in chk.stdout:
                     print(f"{host:16s} {state:22s} CHECK_FAILED {chk.stderr.strip()[-120:]}")
                     rc = 1
                     continue
-                rst = sh(host, "systemctl restart sing-box; sleep 2; systemctl is-active sing-box")
+                rst = sh(host, f"{sudo_prefix} $SUDO systemctl restart sing-box; sleep 2; $SUDO systemctl is-active sing-box")
                 active = rst.stdout.strip().splitlines()[-1] if rst.stdout.strip() else "?"
                 print(f"{host:16s} {state:22s} restart={'ok' if active == 'active' else 'FAIL(' + active + ')'}")
                 if active != "active":
@@ -126,7 +149,7 @@ def main():
             else:
                 print(f"{host:16s} {state}")
                 # NO_GEOSITE = 该机没有 geosite-cn reject，不需要本规则，非故障
-                if state.split()[0] in ("NO_OUTPUT", "PRESENT_WRONG_POSITION"):
+                if state.split()[0] in ("NO_OUTPUT", "ABSENT", "PRESENT_WRONG_POSITION", "PRESENT_DRIFT"):
                     rc = 1
         except Exception as e:
             print(f"{host:16s} ERROR {type(e).__name__}: {e}")

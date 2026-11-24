@@ -4,11 +4,11 @@ Generated Surge rule sets (data files; do not hand-edit).
 
 - `node-reject-mirror.list` — mirror of the upstream node's CN-domain reject list, converted to Surge format.
   Purpose: client-side routing must never send domains that the node would reject.
-- `mirror-exempt.list` — **手写白名单**：永不进入镜像的域（Google 前端静态 CDN、*.googleapis.com 等）。
-  这些域客户端必须能自由走代理，靠镜像"强制直连"会让网页应用落到国内单点 CDN 边缘而报错。
-- `node-exempt.json` — 节点侧 sing-box route 的放行规则体（`domain_suffix: gstatic.com, googleapis.com`
-  → `outbound: direct`），插在 `geosite-cn` reject 之前，避免节点把客户端送来代理的 Google 域秒拒。
-- `apply-node-exempt.py` — 把上面那条节点规则**幂等**铺到整支机队（`--verify` / `--apply` / `--rollback`）。
+- `mirror-exempt.list` — **手写白名单**：永不进入镜像的域（Google 前端静态 CDN、`*.googleapis.com`、`dl.google.com` 等）。
+  这些域客户端必须能自由走代理，靠镜像"强制直连"会让网页应用或下载落到国内单点 CDN 边缘而报错/限速断流。
+- `node-exempt.json` — 节点侧 sing-box route 的放行规则体（`domain_suffix: gstatic.com, googleapis.com, dl.google.com`
+  → `outbound: direct`），插在 `geosite-cn` reject 之前，避免节点把客户端送来代理的 Google 域秒拒；含 `socks-in` 的节点自动限定仅对常规代理入站生效，保持 `socks-in` 的 post-resolve SSRF 防护。
+- `apply-node-exempt.py` — 把上面那条节点规则**幂等**铺到整支机队（含常规 VPS 与 GCP 四区节点；`--verify` / `--apply` / `--rollback`）。
 
 ## 顺序（重要）
 

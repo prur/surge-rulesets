@@ -16,3 +16,6 @@ DOMAIN-SUFFIX,gstatic.com
 
 # --- Google 公共 API（含被广告表 REJECT 的 safebrowsing、Chrome 组件服务等）---
 DOMAIN-SUFFIX,googleapis.com
+
+# --- Google 软件下载 CDN（Chrome/SDK 等安装包；国内移动边缘限速+reset，须走 Google 组代理）---
+DOMAIN,dl.google.com
