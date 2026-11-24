@@ -18,7 +18,6 @@ www.gstatic.com / ssl.gstatic.com / g0-g3.gstatic.com / *.googleapis.com 等 Goo
   内容不同 -> 原位规范化（不会叠加第二条）；位置不对 -> 移到 geosite-cn 之前。
 顺序要求：先用本脚本铺节点，再 gen-mirror.py --push 收紧镜像（见 mirror-exempt.list 注释）。
 """
-import base64
 import json
 import os
 import subprocess
@@ -43,7 +42,7 @@ DEFAULT_HOSTS = [
 ]
 
 REMOTE = r'''
-import json, shutil, sys, time
+import json, os, shutil, sys, time
 mode, cfg, rule_json = sys.argv[1], sys.argv[2], sys.argv[3]
 canonical = json.loads(rule_json)
 try:
@@ -65,6 +64,16 @@ def is_marker(r):
     vals = list(r.get("domain", [])) + list(r.get("domain_suffix", []))
     return r.get("outbound") == "direct" and any(v == "gstatic.com" or v.endswith(".gstatic.com") for v in vals)
 
+def backup_cfg(path):
+    st = os.stat(path)
+    bak = path + ".bak-%d" % int(time.time())
+    shutil.copy2(path, bak)
+    try:
+        os.chown(bak, st.st_uid, st.st_gid)
+    except PermissionError:
+        pass
+    os.chmod(bak, st.st_mode & 0o7777)
+
 idx = next((i for i, r in enumerate(rules) if is_marker(r)), None)
 
 if mode == "verify":
@@ -82,7 +91,7 @@ if geosite_idx is None:
 if mode == "rollback":
     if idx is None:
         print("ABSENT"); sys.exit(0)
-    shutil.copy2(cfg, cfg + ".bak-%d" % int(time.time()))
+    backup_cfg(cfg)
     rules.pop(idx)
     json.dump(c, open(cfg, "w"), indent=2, ensure_ascii=False)
     print("ROLLED_BACK_AT", idx); sys.exit(0)
@@ -90,7 +99,7 @@ if mode == "rollback":
 if idx is not None and idx < geosite_idx and rules[idx] == effective:
     print("ALREADY"); sys.exit(0)
 
-shutil.copy2(cfg, cfg + ".bak-%d" % int(time.time()))
+backup_cfg(cfg)
 if idx is None:
     rules.insert(geosite_idx, effective); print("INSERTED_AT", geosite_idx)
 else:
@@ -102,9 +111,14 @@ json.dump(c, open(cfg, "w"), indent=2, ensure_ascii=False)
 '''
 
 
-def sh(host, cmd, timeout=150):
-    return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=30", host, cmd],
-                          capture_output=True, text=True, timeout=timeout)
+def sh(host, cmd, input_text=None, timeout=150):
+    return subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=30", host, cmd],
+        input=input_text,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
 
 
 def main():
@@ -121,18 +135,15 @@ def main():
 
     canonical = json.load(open(EXEMPT, encoding="utf-8"))["rule"]
     rule_json = json.dumps(canonical, separators=(",", ":"), sort_keys=True)
-    tmp = "/tmp/.node_exempt.py"
-    b64 = base64.b64encode(REMOTE.encode()).decode()
     sudo_prefix = 'SUDO=$([ "$(id -u)" -eq 0 ] && echo "" || echo "sudo -n");'
     rc = 0
     for host in hosts:
         try:
-            up = sh(host, f"echo {b64} | base64 -d > {tmp}")
-            if up.returncode != 0:
-                print(f"{host:16s} SSH_FAIL {up.stderr.strip()[:60]}")
+            run = sh(host, f"{sudo_prefix} $SUDO python3 - {mode} {CONFIG} '{rule_json}'", input_text=REMOTE)
+            if run.returncode != 0 and not run.stdout.strip():
+                print(f"{host:16s} SSH_FAIL {run.stderr.strip()[:80]}")
                 rc = 1
                 continue
-            run = sh(host, f"{sudo_prefix} $SUDO python3 {tmp} {mode} {CONFIG} '{rule_json}'; rc=$?; rm -f {tmp}; exit $rc")
             out = run.stdout.strip()
             state = out.splitlines()[-1] if out else "NO_OUTPUT"
             if mode != "verify" and state.split()[0] in ("INSERTED_AT", "NORMALIZED_AT", "ROLLED_BACK_AT"):
